@@ -7,17 +7,19 @@
           scribble/example
           syntax/parse/define)
 
-@(define (make-delimit-app-eval)
+@(define (make-delimit-app-eval delimit-mod)
    (make-base-eval #:lang 'racket/base
-                   '(require (for-syntax racket/base)
-                             delimit-app
+                   `(require (for-syntax racket/base)
+                             ,delimit-mod
                              racket/stxparam)))
 
 @(define-simple-macro (delimit-app-examples form ...)
-   (examples #:eval (make-delimit-app-eval) form ...))
+   (examples #:eval (make-delimit-app-eval 'delimit-app) form ...))
+
+@(define-simple-macro (delimit-fancy-examples form ...)
+   (examples #:eval (make-delimit-app-eval 'delimit-app/fancy-app) form ...))
 
 @title{Delimiter-Sensitive Application}
-@defmodule[delimit-app]
 @author[@author+email["Jack Firth" "jackhfirth@gmail.com"]]
 
 This library provides a definition of function application (an @racket[#%app]
@@ -26,6 +28,9 @@ braces are used. By default parentheses mean normal function application,
 brackets construct a @racket[list], and braces construct a @racket[hash]. Also
 included is an optional @racketmodname[delimit-app/fancy-app] module that
 provides out-of-the-box integration with @racketmodname[fancy-app].
+
+@section{API Reference}
+@defmodule[delimit-app]
 
 @defform[(delimit-app v ...)]{
  Performs delimiter-sensitive application. If parentheses are used, expands to
@@ -95,3 +100,18 @@ provides out-of-the-box integration with @racketmodname[fancy-app].
 
  @(delimit-app-examples
    {delimit-app/paren + 1 2 3})}
+
+@section{Integration with @racketmodname[fancy-app]}
+@defmodule[delimit-app/fancy-app]
+
+@defform[(delimit-app/fancy-app v ...)]{
+ Like @racket[delimit-app], but where @racket[delimit-app-base-app] is
+ parameterized to the @racket[#%app] macro from @racketmodname[fancy-app]. The
+ @racketmodname[fancy-app] package defines application that constructs anonymous
+ functions using underscores. Also provided by @racket[delimit-app/fancy-app] as
+ @racket[#%app].
+ @(delimit-fancy-examples
+   ;; a hash-constructing lambda
+   (define make-person {'name _ 'age (random 100)})
+   (eval:alts (make-person 'Alice) (hash 'name 'Alice 'age 91))
+   (eval:alts (make-person 'Bob) (hash 'name 'Bob 'age 56)))}
